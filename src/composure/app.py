@@ -2,6 +2,7 @@
 App module - the main Textual TUI application.
 """
 
+import re
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Header, Footer, DataTable, Static, Tree
@@ -18,6 +19,9 @@ from composure.analyzer import (
     restart_container,
     get_container_logs,
 )
+
+# Regex to strip ANSI escape codes from log output
+ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*m')
 
 
 class DetailPanel(Static):
@@ -135,7 +139,9 @@ class ComposureApp(App):
             success, logs = get_container_logs(client, container.name, tail=10)
             if success and logs.strip():
                 log_lines = logs.strip().split('\n')[-8:]  # Last 8 lines
-                formatted_logs = '\n'.join(f"  [dim]{line}[/dim]" for line in log_lines)
+                # Strip ANSI escape codes from logs to avoid markup conflicts
+                clean_lines = [ANSI_ESCAPE.sub('', line) for line in log_lines]
+                formatted_logs = '\n'.join(f"  [dim]{line}[/dim]" for line in clean_lines)
             else:
                 formatted_logs = "  [dim](no logs)[/dim]"
         except Exception:
@@ -327,7 +333,9 @@ class ComposureApp(App):
 
             if success:
                 log_lines = logs.strip().split('\n')[-50:]
-                formatted_logs = '\n'.join(f"{line}" for line in log_lines)
+                # Strip ANSI escape codes from logs to avoid markup conflicts
+                clean_lines = [ANSI_ESCAPE.sub('', line) for line in log_lines]
+                formatted_logs = '\n'.join(clean_lines)
                 panel.update(
                     f"[bold]Logs for {container.name}[/bold] [dim](ID: {container.container_id})[/dim]  "
                     f"[green]LIVE[/green]  [yellow]Press 'r' to return[/yellow]\n\n"
