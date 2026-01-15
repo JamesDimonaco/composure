@@ -115,12 +115,15 @@ jobs:
         run: |
           cat > /tmp/postinst << 'EOF'
           #!/bin/bash
+          # --break-system-packages needed for PEP 668 (Debian 12+, Ubuntu 23.04+)
+          pip3 install --upgrade --break-system-packages composure 2>/dev/null || \
           pip3 install --upgrade composure
           EOF
           chmod 755 /tmp/postinst
 
           cat > /tmp/postrm << 'EOF'
           #!/bin/bash
+          pip3 uninstall -y --break-system-packages composure 2>/dev/null || \
           pip3 uninstall -y composure 2>/dev/null || true
           EOF
           chmod 755 /tmp/postrm
