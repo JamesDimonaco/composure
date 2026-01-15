@@ -4,10 +4,10 @@ Suite: stable
 Codename: stable
 Architectures: amd64 arm64 all
 Components: main
-Date: Thu, 15 Jan 2026 23:10:45 +0000
+Date: Thu, 15 Jan 2026 23:42:54 +0000
 Description: Composure APT Repository
 SHA256:
- a8f5c6a13c89b5281ca9ddc18eb00e8f3e12090441b24d9bfde6ebf5da34503e 2383 main/binary-amd64/Packages
- 17bfb7cbd797c9297a24d58e7ae39d9b1a2fe2cdf26d7fe9e8a2d251220ff99a 805 main/binary-amd64/Packages.gz
- a8f5c6a13c89b5281ca9ddc18eb00e8f3e12090441b24d9bfde6ebf5da34503e 2383 main/binary-arm64/Packages
- 17bfb7cbd797c9297a24d58e7ae39d9b1a2fe2cdf26d7fe9e8a2d251220ff99a 805 main/binary-arm64/Packages.gz
+ b76d5b8906bc6129ad779c3d2012ea2ffb27099bd44e950c32521b7305aa1fb3 2960 main/binary-amd64/Packages
+ 1d14e71abae7dbb82363a6181222dd1e1e2e27d9964fa5da71218d98d473d27d 902 main/binary-amd64/Packages.gz
+ b76d5b8906bc6129ad779c3d2012ea2ffb27099bd44e950c32521b7305aa1fb3 2960 main/binary-arm64/Packages
+ 1d14e71abae7dbb82363a6181222dd1e1e2e27d9964fa5da71218d98d473d27d 902 main/binary-arm64/Packages.gz
