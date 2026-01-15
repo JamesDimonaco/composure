@@ -93,6 +93,7 @@ jobs:
       - name: Wait for PyPI and install
         run: |
           sleep 30
+          pip install packaging
           pip install composure==${{ steps.version.outputs.VERSION }}
 
       - name: Build .deb package
