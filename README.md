@@ -26,22 +26,40 @@ Composure is a TUI (Terminal User Interface) dashboard that helps you:
 
 ## Installation
 
-### Using pip
+### Using pip (recommended)
 
 ```bash
 pip install composure
 ```
 
-### Using uv (recommended)
+### Using uv
 
 ```bash
 uv tool install composure
 ```
 
+### Using Docker
+
+```bash
+docker run -it -v /var/run/docker.sock:/var/run/docker.sock jamesdimonaco/composure
+```
+
+### Debian/Ubuntu (apt)
+
+```bash
+# Add the repository
+curl -fsSL https://jamesdimonaco.github.io/composure/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/composure.gpg
+echo "deb [signed-by=/usr/share/keyrings/composure.gpg] https://jamesdimonaco.github.io/composure stable main" | sudo tee /etc/apt/sources.list.d/composure.list
+
+# Install
+sudo apt update
+sudo apt install composure
+```
+
 ### From source
 
 ```bash
-git clone https://github.com/yourusername/composure.git
+git clone https://github.com/JamesDimonaco/composure.git
 cd composure
 uv sync
 uv run composure
@@ -123,7 +141,7 @@ Docker Networks
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/composure.git
+git clone https://github.com/JamesDimonaco/composure.git
 cd composure
 
 # Install dependencies

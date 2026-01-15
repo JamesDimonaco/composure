@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-LABEL org.opencontainers.image.source="https://github.com/yourusername/composure"
+LABEL org.opencontainers.image.source="https://github.com/JamesDimonaco/composure"
 LABEL org.opencontainers.image.description="Docker-Compose optimizer and TUI dashboard"
 LABEL org.opencontainers.image.licenses="MIT"
 

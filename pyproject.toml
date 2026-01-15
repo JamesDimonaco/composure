@@ -42,9 +42,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/composure"
-Repository = "https://github.com/yourusername/composure"
-Issues = "https://github.com/yourusername/composure/issues"
+Homepage = "https://github.com/JamesDimonaco/composure"
+Repository = "https://github.com/JamesDimonaco/composure"
+Issues = "https://github.com/JamesDimonaco/composure/issues"
 
 [project.scripts]
 composure = "composure.cli:app"
