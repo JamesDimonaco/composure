@@ -1,6 +1,6 @@
 [project]
 name = "composure"
-version = "0.1.4"
+version = "0.1.5"
 description = "A terminal tool to audit, optimize, and visualize Docker-Compose stacks in real-time"
 readme = "README.md"
 license = {text = "MIT"}

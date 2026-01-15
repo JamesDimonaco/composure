@@ -44,7 +44,7 @@ class ComposureApp(App):
     /* Detail panel at the bottom */
     #detail-panel {
         height: auto;
-        max-height: 12;
+        max-height: 15;
         margin: 0 1 1 1;
         padding: 1;
         border: round $secondary;
@@ -126,50 +126,29 @@ class ComposureApp(App):
             self.show_container_details(container)
 
     def show_container_details(self, container) -> None:
-        """Update the detail panel with container info."""
+        """Update the detail panel with container info and logs."""
         panel = self.query_one("#detail-panel", Static)
 
-        # Build the network visualization
-        if not container.networks:
-            network_info = "[dim]Not connected to any networks[/dim]"
-        else:
-            # Get full network map to find connected containers
-            try:
-                client = get_docker_client()
-                network_map = get_network_map(client)
-            except Exception:
-                network_map = {}
+        # Get latest logs
+        try:
+            client = get_docker_client()
+            success, logs = get_container_logs(client, container.name, tail=10)
+            if success and logs.strip():
+                log_lines = logs.strip().split('\n')[-8:]  # Last 8 lines
+                formatted_logs = '\n'.join(f"  [dim]{line}[/dim]" for line in log_lines)
+            else:
+                formatted_logs = "  [dim](no logs)[/dim]"
+        except Exception:
+            formatted_logs = "  [dim](unable to fetch logs)[/dim]"
 
-            lines = []
-            for net in container.networks:
-                # Find other containers on this network
-                others = network_map.get(net, [])
-                others = [c for c in others if c != container.name]
-
-                # Build visual representation
-                if others:
-                    others_str = ", ".join(others[:5])
-                    if len(others) > 5:
-                        others_str += f" +{len(others)-5} more"
-                    lines.append(
-                        f"  [cyan]┌─ {net} ─────────────────────────────┐[/cyan]\n"
-                        f"  [cyan]│[/cyan] [bold]{container.name}[/bold] ←→ {others_str}\n"
-                        f"  [cyan]└────────────────────────────────────────┘[/cyan]"
-                    )
-                else:
-                    lines.append(
-                        f"  [dim]┌─ {net} ─────────────────────────────┐[/dim]\n"
-                        f"  [dim]│[/dim] [bold]{container.name}[/bold] [dim](alone on network)[/dim]\n"
-                        f"  [dim]└────────────────────────────────────────┘[/dim]"
-                    )
-
-            network_info = "\n".join(lines)
-
-        # Format the full detail view
+        # Format the detail view with easy-to-copy IDs
         detail_text = (
-            f"[bold]Container:[/bold] {container.name} ({container.container_id})  "
-            f"[bold]Status:[/bold] {container.status}\n"
-            f"[bold]Networks:[/bold]\n{network_info}"
+            f"[bold]{container.name}[/bold]  "
+            f"{self.format_status(container.status)}  "
+            f"[dim]Networks: {', '.join(container.networks) if container.networks else 'none'}[/dim]\n"
+            f"[bold]ID:[/bold] [cyan]{container.container_id}[/cyan]  "
+            f"[dim]Full:[/dim] [cyan]{container.full_id[:20]}...[/cyan]\n"
+            f"[bold]Logs:[/bold]\n{formatted_logs}"
         )
 
         panel.update(detail_text)
@@ -215,8 +194,10 @@ class ComposureApp(App):
             self.show_container_details(self.container_data[0])
 
     def action_refresh(self) -> None:
-        """Handle 'r' keypress - refresh current view."""
-        if self.current_view == "networks":
+        """Handle 'r' keypress - refresh current view or return from logs."""
+        if self.current_view == "logs":
+            self.restore_from_logs()
+        elif self.current_view == "networks":
             self.refresh_networks()
         else:
             self.refresh_stats()
@@ -301,26 +282,92 @@ class ComposureApp(App):
                 self.refresh_stats()
 
     def action_show_logs(self) -> None:
-        """Show logs for the selected container."""
+        """Show extended logs for the selected container (fullscreen, live)."""
         container = self.get_selected_container()
         if not container:
             self.show_message("[yellow]Select a container first[/yellow]")
             return
 
-        client = get_docker_client()
-        success, logs = get_container_logs(client, container.name, tail=30)
+        # Hide the table and status bar completely
+        table = self.query_one(DataTable)
+        table.display = False
+        status = self.query_one("#status-bar", Static)
+        status.display = False
 
+        # Expand the panel to full size
         panel = self.query_one("#detail-panel", Static)
-        if success:
-            # Format logs nicely - show last few lines
-            log_lines = logs.strip().split('\n')[-15:]  # Last 15 lines
-            formatted_logs = '\n'.join(log_lines)
-            panel.update(
-                f"[bold]Logs for {container.name}:[/bold]\n"
-                f"[dim]{formatted_logs}[/dim]"
-            )
-        else:
-            panel.update(f"[red]{logs}[/red]")
+        panel.styles.max_height = "100%"
+        panel.styles.height = "1fr"
+        panel.styles.width = "100%"
+        panel.styles.margin = (0, 1, 1, 1)
+
+        self.current_view = "logs"
+        self._logs_container = container
+
+        # Show initial logs
+        self._refresh_logs()
+
+        # Start live log refresh (every 2 seconds)
+        self._log_timer = self.set_interval(2, self._refresh_logs)
+
+        # Force full screen refresh
+        self.refresh()
+
+    def _refresh_logs(self) -> None:
+        """Refresh the logs display."""
+        if self.current_view != "logs" or not hasattr(self, '_logs_container'):
+            return
+
+        container = self._logs_container
+        panel = self.query_one("#detail-panel", Static)
+
+        try:
+            client = get_docker_client()
+            success, logs = get_container_logs(client, container.name, tail=200)
+
+            if success:
+                log_lines = logs.strip().split('\n')[-50:]
+                formatted_logs = '\n'.join(f"{line}" for line in log_lines)
+                panel.update(
+                    f"[bold]Logs for {container.name}[/bold] [dim](ID: {container.container_id})[/dim]  "
+                    f"[green]LIVE[/green]  [yellow]Press 'r' to return[/yellow]\n\n"
+                    f"[dim]{formatted_logs}[/dim]"
+                )
+            else:
+                panel.update(f"[red]{logs}[/red]")
+        except Exception as e:
+            panel.update(f"[red]Error fetching logs: {e}[/red]")
+
+    def restore_from_logs(self) -> None:
+        """Restore the normal view after viewing logs."""
+        if self.current_view != "logs":
+            return
+
+        # Stop the live refresh timer
+        if hasattr(self, '_log_timer'):
+            self._log_timer.stop()
+
+        # Show the table and status bar again
+        table = self.query_one(DataTable)
+        table.display = True
+        status = self.query_one("#status-bar", Static)
+        status.display = True
+
+        # Restore panel size
+        panel = self.query_one("#detail-panel", Static)
+        panel.styles.max_height = "15"
+        panel.styles.height = "auto"
+        panel.styles.width = "auto"
+        panel.styles.margin = (0, 1, 1, 1)
+
+        self.current_view = "stats"
+
+        # Refresh to restore normal view
+        if hasattr(self, '_logs_container'):
+            self.show_container_details(self._logs_container)
+
+        # Force full screen refresh
+        self.refresh()
 
     def show_message(self, message: str) -> None:
         """Show a message in the status bar."""

@@ -13,7 +13,8 @@ class ContainerStats:
     """Holds stats for a single container."""
 
     name: str
-    container_id: str  # Short ID for display
+    container_id: str  # Short ID (12 chars) for commands
+    full_id: str  # Full container ID for copying
     cpu_percent: float
     cpu_limit: float
     has_cpu_limit: bool
@@ -173,6 +174,7 @@ def get_single_container_stats(container) -> Optional[ContainerStats]:
         return ContainerStats(
             name=container.name,
             container_id=container.short_id,  # e.g., "a1b2c3d4"
+            full_id=container.id,  # Full 64-char ID
             cpu_percent=cpu_percent,
             cpu_limit=cpu_limit,
             has_cpu_limit=has_cpu_limit,
