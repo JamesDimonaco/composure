@@ -7,26 +7,26 @@ Suite: stable
 Codename: stable
 Architectures: amd64 arm64 all
 Components: main
-Date: Thu, 15 Jan 2026 16:31:58 +0000
+Date: Thu, 15 Jan 2026 17:12:08 +0000
 Description: Composure APT Repository
 SHA256:
- 360bad1ba469637938c2c87afba5adbf43bd670b58306da2754abb1179bea13c 1229 main/binary-amd64/Packages
- 79452ed86bb810c6aeca8660d151d6cf9a8e3d26e3d47c7097ade9ffa88b1c2a 594 main/binary-amd64/Packages.gz
- 360bad1ba469637938c2c87afba5adbf43bd670b58306da2754abb1179bea13c 1229 main/binary-arm64/Packages
- 79452ed86bb810c6aeca8660d151d6cf9a8e3d26e3d47c7097ade9ffa88b1c2a 594 main/binary-arm64/Packages.gz
+ 68c4104fabbaf7e58676785bde4d5e357cc76b8213efda0c71f99ed2b70cc38e 1806 main/binary-amd64/Packages
+ 3cd6ca0ce3c21eba7e24cdd7e9e9e6fad0b4d51b318808b54a0a6d4d29516327 697 main/binary-amd64/Packages.gz
+ 68c4104fabbaf7e58676785bde4d5e357cc76b8213efda0c71f99ed2b70cc38e 1806 main/binary-arm64/Packages
+ 3cd6ca0ce3c21eba7e24cdd7e9e9e6fad0b4d51b318808b54a0a6d4d29516327 697 main/binary-arm64/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCgAdFiEEziN7JatDtbWkji8Mzgr44vbgV6kFAmlpFn4ACgkQzgr44vbg
-V6kW/A/9GqO86R+8pFekCG08Oob2lf+FsAgT2Tk1mA/qWxGBhiGMXn1AqLPzvo8O
-WNl3DOUjDPgvyPZwKeaKCMD43R/LdUUvQaGm2ekDMf60JErD4sTjDflAH57yFoUk
-HbjMSr6TMr6IwLrjz8Dbnb/Pd1TDBgn42oLC0R3rSBNTR73yg5SkvRr7nxsMw9Ee
-ExvH+zO1jqE3vzlIj7ejf8cJwSW17unhTOqMfk95Duoe83SGkv2mgZXvNAq7Atjq
-isMTLztMFiywNvTNMq0SvHWyLwl5s/Tv0HhInOhIx5Hq678Wi8CSmK7J4rI+8nHn
-1AfIp93o8WLNJO5ADg4ZYGItAS8j2F20TL0+Nb4fkKaZilxrt0fKL23VWTtjlfCM
-f/+KvhNw/U74nBzXx1ECEwIWM2ca71MajfnII3x0i1au/u3cgq8cWjLYI58QOY0c
-1TvgLmh2gDP3sY5NXPdRakZHDCvNu2J3HPyJUHpDI08ktWLCGpi47DLH1dNjmvoA
-krxDENlg8/JgV9EZ4NB5fwTJJRHLdkzWF2paU2Z+ydKVl/UpmgegYGWFMmpTxA8K
-mB2uA7JP9fm3QnqE0hlK6NZ2DyrtZ/OZ4AyyBQA4t+mK6yJzXaPiLRRPVlCk09hi
-KEilZyu64nOo2Lchus4iCwV8oe7S3Sv19gm+U/7iid2Xn7rH8mk=
-=cO55
+iQIzBAEBCgAdFiEEziN7JatDtbWkji8Mzgr44vbgV6kFAmlpH+gACgkQzgr44vbg
+V6muuw//YgzUHAr03IiV2DKTQcPZ6431g39eyFd+23AiKqqJz98H+JLiCMElonBx
+DJUiod80yLV6/ZkBHC1JgkyIUrtTlkDHBAXCES0CFzW5p66Q+g4a3+SWZyVmqqZl
+Z5T35PQ/JTB3mxjJR6OY9TAMNVrKvSuiu/bF/evTJv2WqwZI4dFLU0MpkjE02hhV
+wz60gJ76nYhpAefy958G/SgvodS7K4srj6iVf/i40hCYIxv1rX2tlhjsm9bF/MFE
+N8ivhY4/i+uh4oJPLYxfPYs9y4tdV+jWUQkjJ8WrSEo/uBVjtEvvf/X4VPQV8l6F
+TCb35dmzJhwoMSTziwfZPg/wxT1MrchviA20ck8Txzw21XWOczwW+ERvHpG2Tbec
+7EWfqLmsOOJGajS+s1IAS+MHopsZtqH1ANLlPxTHpe+vvP4jaCgMGL4Ta5wOo4OH
+cZyWErOzr2yDrMLwDQrVUZak4ggRlR9KwHy1Xxmk+cQrdW+bKV21J/INc3xJgsyc
+ctCUCUqXJC3qFR+EsHX50ngx1b0oqcr+NUbE8Favxh6khDYq5dODXLIhaQ2CCCKZ
+x5dDDqQoa8svRQMsgwT5/vddZXWJ+0/1jalXtP6ATvM+XC3yv1gAqV1PJbs7EAiq
+wskIisSL6fLenMNoR2/JFkQYnYCRy/hBrbLkte82oMZ3On8cZU8=
+=LR48
 -----END PGP SIGNATURE-----

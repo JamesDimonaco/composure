@@ -34,3 +34,21 @@ Description: Terminal tool to audit, optimize, and visualize Docker-Compose stac
 License: MIT
 Vendor: none
 
+Package: composure
+Version: 0.1.5
+Architecture: all
+Maintainer: James Dimonaco <james@dimonaco.co.uk>
+Installed-Size: 0
+Depends: python3, python3-pip
+Filename: pool/main/c/composure/composure_0.1.5_all.deb
+Size: 1106
+MD5sum: 67eff6bd2bb907fd11d9681e7d63622e
+SHA1: 7f5a3e32747dc2fdbc0d287872e0a795bbfbf584
+SHA256: 807c6387b7ba487c81e826ff2c1ccde3d87acac7ee64faba7cb5744adf3bce99
+Section: default
+Priority: optional
+Homepage: https://github.com/JamesDimonaco/composure
+Description: Terminal tool to audit, optimize, and visualize Docker-Compose stacks
+License: MIT
+Vendor: none
+
