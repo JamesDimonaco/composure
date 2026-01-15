@@ -1,8 +1,13 @@
-name: Publish to PyPI, Docker Hub, and APT
+name: Release
 
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.1.4)'
+        required: true
 
 jobs:
   pypi:
@@ -46,11 +51,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract version from tag
+      - name: Extract version
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
+          fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build and push
@@ -64,7 +73,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
   apt:
-    name: Build and Publish APT Repository
+    name: Build APT Package
     runs-on: ubuntu-latest
     needs: pypi
     permissions:
@@ -74,11 +83,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract version from tag
+      - name: Extract version
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
+          fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Set up Python
@@ -100,28 +113,25 @@ jobs:
 
       - name: Build .deb package
         run: |
-          # Create post-install script
-          cat > /tmp/postinst << 'POSTINST'
+          cat > /tmp/postinst << 'EOF'
           #!/bin/bash
           pip3 install --upgrade composure
-          POSTINST
+          EOF
           chmod 755 /tmp/postinst
 
-          # Create post-remove script
-          cat > /tmp/postrm << 'POSTRM'
+          cat > /tmp/postrm << 'EOF'
           #!/bin/bash
           pip3 uninstall -y composure 2>/dev/null || true
-          POSTRM
+          EOF
           chmod 755 /tmp/postrm
 
-          # Build deb with pip-based installation
           fpm -s python -t deb \
             --name composure \
             --version ${{ steps.version.outputs.VERSION }} \
             --architecture all \
             --description "Terminal tool to audit, optimize, and visualize Docker-Compose stacks" \
             --url "https://github.com/${{ github.repository }}" \
-            --maintainer "James Dimonaco" \
+            --maintainer "James Dimonaco <james@dimonaco.co.uk>" \
             --license "MIT" \
             --depends python3 \
             --depends python3-pip \
@@ -133,6 +143,7 @@ jobs:
             composure
 
       - name: Upload .deb to release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: "*.deb"
@@ -151,48 +162,39 @@ jobs:
         run: |
           cd gh-pages
 
-          # Create directory structure
           mkdir -p pool/main/c/composure
           mkdir -p dists/stable/main/binary-amd64
           mkdir -p dists/stable/main/binary-arm64
 
-          # Copy new .deb
           cp ../*.deb pool/main/c/composure/
 
-          # Generate Packages file
           dpkg-scanpackages --multiversion pool/ > dists/stable/main/binary-amd64/Packages
           gzip -k -f dists/stable/main/binary-amd64/Packages
           cp dists/stable/main/binary-amd64/Packages* dists/stable/main/binary-arm64/
 
-          # Generate Release file
           cd dists/stable
           cat > Release << EOF
-Origin: Composure
-Label: Composure
-Suite: stable
-Codename: stable
-Architectures: amd64 arm64 all
-Components: main
-Date: $(date -Ru)
-Description: Composure APT Repository
-EOF
+          Origin: Composure
+          Label: Composure
+          Suite: stable
+          Codename: stable
+          Architectures: amd64 arm64 all
+          Components: main
+          Date: $(date -Ru)
+          Description: Composure APT Repository
+          EOF
 
-          # Add checksums to Release
           echo "SHA256:" >> Release
           for f in main/binary-*/Packages*; do
             echo " $(sha256sum $f | cut -d' ' -f1) $(wc -c < $f) $f" >> Release
           done
 
-          # Sign Release file
           gpg --batch --yes --armor --detach-sign -o Release.gpg Release
           gpg --batch --yes --clearsign -o InRelease Release
 
           cd ../..
 
-          # Export public key
           gpg --armor --export "Composure APT Repo" > gpg.key
-
-          # Copy install script
           cp ../install.sh .
 
       - name: Commit and push to gh-pages
