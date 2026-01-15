@@ -1,0 +1,18 @@
+Package: composure
+Version: 0.1.3
+Architecture: all
+Maintainer: James Dimonaco
+Installed-Size: 0
+Depends: python-docker (>= 7.1.0), python-ruamel-yaml (>= 0.18.0), python-textual (>= 0.40.0), python-typer (>= 0.9.0), python3
+Filename: pool/main/c/composure/composure_0.1.3_all.deb
+Size: 1024
+MD5sum: 31a5b7f406ffdc19528ac5442a04410b
+SHA1: 158355003ad7a4f61eba6fd8181272c27534ecf5
+SHA256: c765f23b066e93ff137354de7ef82c35449e94f973046771d57c6e8f7e2b2b46
+Section: default
+Priority: optional
+Homepage: https://github.com/JamesDimonaco/composure
+Description: Terminal tool to audit, optimize, and visualize Docker-Compose stacks
+License: MIT
+Vendor: none
+

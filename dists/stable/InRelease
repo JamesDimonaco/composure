@@ -1,0 +1,31 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: Composure
+Label: Composure
+Suite: stable
+Codename: stable
+Architectures: amd64 arm64
+Components: main
+Description: Composure APT Repository
+SHA256:
+ a8c08132838b0854d33a347d53773c9293246b9a601d5254e32bdf05490ed8f1 652 main/binary-amd64/Packages
+ bdff5349cbc6b6ff1f6ffd5ce9462322b1b89d7a334f107408d79d3e09f68e08 456 main/binary-amd64/Packages.gz
+ a8c08132838b0854d33a347d53773c9293246b9a601d5254e32bdf05490ed8f1 652 main/binary-arm64/Packages
+ bdff5349cbc6b6ff1f6ffd5ce9462322b1b89d7a334f107408d79d3e09f68e08 456 main/binary-arm64/Packages.gz
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEEziN7JatDtbWkji8Mzgr44vbgV6kFAmlpCvEACgkQzgr44vbg
+V6kWhg//QUBMtXl6krXKibSZozvKRuYtd4s3rPwyQ/+VdjCBB1IaxNchJYEJTsv0
+e1fYJRSp1Nbp7RyoZaWmv+FCizwbOMTXQk5Gfm7v07vIu1kqnTt3KscMgUWjlkb7
+0Xd35sz7MSgkHCcmy3IzslF9dJK64OFEQybxvTb4cdtip/EJ8EHp6wcM3/6rAeo2
+gCPNwpnyikoukn13g6Svid1V5GAOMoAbI7OsU6iUs5UVIGshNG5QJG1xKmJsmIaK
+naYZD+X+DQTWqMBRi/iDOx9hUBwp2tvPveqW9Jhh6d350dupWFzXjB4GBsyTq2F0
+wmRrn0jWbAl+NG9p0AG46fI8hgEesPlJXOW2YYAbSRweLVfM04fMjfCF4icPqEqW
+qFQNAWtJKlCMQ0RjIvHEDGez4F3ME0pBfbrG4367pwVY/KxjFjVzUV00XTiU7tH7
+HPq3QzwMB2rzPQeZSwtcOmDaNRRwod33JZ+Fjvt3EYz19JEVFnOaADyKS0+1Kzub
+r+iMBm05kkur6qA+hl/KkZxwp+bjbd3Tje8lN0nNscZXLY3kXc/UVwYPuWYY5MGj
+OpNElbwbfnuEAxDthzqV9oH9dPnuZAsH2bapqeam9h4ryDOOgQEghfRbXM3HFKwp
+EhEn2khdJQ0MkF3rzQynbODg2jz9i2tfJoJnt2ITQ+kpGkXcf80=
+=IAHf
+-----END PGP SIGNATURE-----

@@ -1,0 +1,12 @@
+Origin: Composure
+Label: Composure
+Suite: stable
+Codename: stable
+Architectures: amd64 arm64
+Components: main
+Description: Composure APT Repository
+SHA256:
+ a8c08132838b0854d33a347d53773c9293246b9a601d5254e32bdf05490ed8f1 652 main/binary-amd64/Packages
+ bdff5349cbc6b6ff1f6ffd5ce9462322b1b89d7a334f107408d79d3e09f68e08 456 main/binary-amd64/Packages.gz
+ a8c08132838b0854d33a347d53773c9293246b9a601d5254e32bdf05490ed8f1 652 main/binary-arm64/Packages
+ bdff5349cbc6b6ff1f6ffd5ce9462322b1b89d7a334f107408d79d3e09f68e08 456 main/binary-arm64/Packages.gz
