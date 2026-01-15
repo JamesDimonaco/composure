@@ -4,6 +4,16 @@ A terminal tool to audit, optimize, and visualize Docker-Compose stacks in real-
 
 ![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![PyPI](https://img.shields.io/pypi/v/composure)
+![Docker](https://img.shields.io/docker/v/jamesdimonaco/composure?label=docker)
+
+## Quick Install
+
+```bash
+pip install composure
+```
+
+Or choose your preferred method below.
 
 ## What is Composure?
 
@@ -26,29 +36,45 @@ Composure is a TUI (Terminal User Interface) dashboard that helps you:
 
 ## Installation
 
-### Using pip (recommended)
+### pip (recommended)
 
 ```bash
 pip install composure
 ```
 
-### Using uv
+### pipx (isolated environment)
+
+```bash
+pipx install composure
+```
+
+### uv
 
 ```bash
 uv tool install composure
 ```
 
-### Using Docker
+### Docker
 
 ```bash
 docker run -it -v /var/run/docker.sock:/var/run/docker.sock jamesdimonaco/composure
 ```
 
-### Debian/Ubuntu (apt)
+### Debian/Ubuntu
 
 ```bash
-# Add the repository
+# One-line install script
+curl -fsSL https://jamesdimonaco.github.io/composure/install.sh | sudo bash
+```
+
+<details>
+<summary>Or install manually</summary>
+
+```bash
+# Add the GPG key
 curl -fsSL https://jamesdimonaco.github.io/composure/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/composure.gpg
+
+# Add the repository
 echo "deb [signed-by=/usr/share/keyrings/composure.gpg] https://jamesdimonaco.github.io/composure stable main" | sudo tee /etc/apt/sources.list.d/composure.list
 
 # Install
@@ -56,18 +82,17 @@ sudo apt update
 sudo apt install composure
 ```
 
+</details>
+
 ### From source
 
 ```bash
 git clone https://github.com/JamesDimonaco/composure.git
 cd composure
-uv sync
-uv run composure
+pip install -e .
 ```
 
 ## Usage
-
-Simply run:
 
 ```bash
 composure
@@ -100,21 +125,25 @@ postgres      running  1.2%   1 core     256 MB    512 MB     GOOD        20
 
 ### Columns Explained
 
-- **Status**: running, exited, paused, etc.
-- **CPU %**: Current CPU usage
-- **CPU Limit**: Configured CPU limit (or "No limit")
-- **RAM Used**: Current memory usage
-- **RAM Limit**: Configured memory limit (or "No limit")
-- **Efficiency**: LOW/MEDIUM/GOOD/HIGH based on resource utilization
-- **Waste**: 0-100 score (higher = more over-provisioned)
+| Column | Description |
+|--------|-------------|
+| **Status** | running, exited, paused, etc. |
+| **CPU %** | Current CPU usage |
+| **CPU Limit** | Configured limit (or "No limit") |
+| **RAM Used** | Current memory usage |
+| **RAM Limit** | Configured limit (or "No limit") |
+| **Efficiency** | LOW/MEDIUM/GOOD/HIGH utilization |
+| **Waste** | 0-100 score (higher = more over-provisioned) |
 
 ### Waste Score
 
 The waste score helps identify containers that have been allocated far more resources than they're using:
 
-- **0-30** (green): Good utilization
-- **30-60** (yellow): Could be optimized
-- **60-100** (red): Significantly over-provisioned
+| Score | Color | Meaning |
+|-------|-------|---------|
+| 0-30 | Green | Good utilization |
+| 30-60 | Yellow | Could be optimized |
+| 60-100 | Red | Significantly over-provisioned |
 
 ### Network View
 
@@ -137,23 +166,6 @@ Docker Networks
 - Docker Engine running locally
 - Access to Docker socket
 
-## Development
-
-```bash
-# Clone the repo
-git clone https://github.com/JamesDimonaco/composure.git
-cd composure
-
-# Install dependencies
-uv sync
-
-# Run in development
-uv run composure
-
-# Run tests
-uv run pytest
-```
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -162,9 +174,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Acknowledgments
+## Links
 
-Built with:
-- [Textual](https://github.com/Textualize/textual) - TUI framework
-- [docker-py](https://github.com/docker/docker-py) - Docker SDK for Python
-- [Typer](https://github.com/tiangolo/typer) - CLI framework
+- [PyPI Package](https://pypi.org/project/composure/)
+- [Docker Hub](https://hub.docker.com/r/jamesdimonaco/composure)
+- [GitHub Repository](https://github.com/JamesDimonaco/composure)
+- [Report Issues](https://github.com/JamesDimonaco/composure/issues)

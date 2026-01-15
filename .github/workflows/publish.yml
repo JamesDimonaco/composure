@@ -171,6 +171,9 @@ jobs:
           # Export public key
           gpg --armor --export "Composure APT Repo" > gpg.key
 
+          # Copy install script
+          cp ../install.sh .
+
       - name: Commit and push to gh-pages
         run: |
           cd gh-pages
