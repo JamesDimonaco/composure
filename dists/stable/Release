@@ -2,11 +2,12 @@ Origin: Composure
 Label: Composure
 Suite: stable
 Codename: stable
-Architectures: amd64 arm64
+Architectures: amd64 arm64 all
 Components: main
+Date: Thu, 15 Jan 2026 16:31:58 +0000
 Description: Composure APT Repository
 SHA256:
- a8c08132838b0854d33a347d53773c9293246b9a601d5254e32bdf05490ed8f1 652 main/binary-amd64/Packages
- bdff5349cbc6b6ff1f6ffd5ce9462322b1b89d7a334f107408d79d3e09f68e08 456 main/binary-amd64/Packages.gz
- a8c08132838b0854d33a347d53773c9293246b9a601d5254e32bdf05490ed8f1 652 main/binary-arm64/Packages
- bdff5349cbc6b6ff1f6ffd5ce9462322b1b89d7a334f107408d79d3e09f68e08 456 main/binary-arm64/Packages.gz
+ 360bad1ba469637938c2c87afba5adbf43bd670b58306da2754abb1179bea13c 1229 main/binary-amd64/Packages
+ 79452ed86bb810c6aeca8660d151d6cf9a8e3d26e3d47c7097ade9ffa88b1c2a 594 main/binary-amd64/Packages.gz
+ 360bad1ba469637938c2c87afba5adbf43bd670b58306da2754abb1179bea13c 1229 main/binary-arm64/Packages
+ 79452ed86bb810c6aeca8660d151d6cf9a8e3d26e3d47c7097ade9ffa88b1c2a 594 main/binary-arm64/Packages.gz
