@@ -67,6 +67,8 @@ jobs:
     name: Build and Publish APT Repository
     runs-on: ubuntu-latest
     needs: pypi
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -92,7 +94,7 @@ jobs:
 
       - name: Wait for PyPI and install
         run: |
-          sleep 30
+          sleep 60
           pip install packaging
           pip install composure==${{ steps.version.outputs.VERSION }}
 
