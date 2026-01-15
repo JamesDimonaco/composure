@@ -100,14 +100,34 @@ jobs:
 
       - name: Build .deb package
         run: |
+          # Create post-install script
+          cat > /tmp/postinst << 'POSTINST'
+          #!/bin/bash
+          pip3 install --upgrade composure
+          POSTINST
+          chmod 755 /tmp/postinst
+
+          # Create post-remove script
+          cat > /tmp/postrm << 'POSTRM'
+          #!/bin/bash
+          pip3 uninstall -y composure 2>/dev/null || true
+          POSTRM
+          chmod 755 /tmp/postrm
+
+          # Build deb with pip-based installation
           fpm -s python -t deb \
             --name composure \
             --version ${{ steps.version.outputs.VERSION }} \
+            --architecture all \
             --description "Terminal tool to audit, optimize, and visualize Docker-Compose stacks" \
             --url "https://github.com/${{ github.repository }}" \
             --maintainer "James Dimonaco" \
             --license "MIT" \
             --depends python3 \
+            --depends python3-pip \
+            --no-python-dependencies \
+            --after-install /tmp/postinst \
+            --after-remove /tmp/postrm \
             --python-bin python3 \
             --python-pip pip3 \
             composure
@@ -147,14 +167,15 @@ jobs:
           # Generate Release file
           cd dists/stable
           cat > Release << EOF
-          Origin: Composure
-          Label: Composure
-          Suite: stable
-          Codename: stable
-          Architectures: amd64 arm64
-          Components: main
-          Description: Composure APT Repository
-          EOF
+Origin: Composure
+Label: Composure
+Suite: stable
+Codename: stable
+Architectures: amd64 arm64 all
+Components: main
+Date: $(date -Ru)
+Description: Composure APT Repository
+EOF
 
           # Add checksums to Release
           echo "SHA256:" >> Release
