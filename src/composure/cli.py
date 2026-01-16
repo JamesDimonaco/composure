@@ -78,12 +78,22 @@ def pull(
         None,
         help="Path to docker-compose file directory (default: current directory)",
     ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        "-j",
+        help="Output progress as JSON lines (for scripting)",
+    ),
 ):
     """
     Pull all images from docker-compose.yml with progress tracking.
 
     Shows a single overall progress percentage across all images.
+    Use --json for machine-readable output.
     """
+    import json
+    import sys
+
     console = Console()
 
     # Find compose file and images
@@ -91,17 +101,56 @@ def pull(
     compose_path, images = find_compose_and_images(directory)
 
     if not compose_path:
-        console.print("[red]No docker-compose.yml found[/red]")
+        if json_output:
+            print(json.dumps({"error": "No docker-compose.yml found"}))
+        else:
+            console.print("[red]No docker-compose.yml found[/red]")
         raise typer.Exit(1)
 
     if not images:
-        console.print("[yellow]No images found in compose file (all services use build?)[/yellow]")
+        if json_output:
+            print(json.dumps({"error": "No images found in compose file"}))
+        else:
+            console.print("[yellow]No images found in compose file (all services use build?)[/yellow]")
         raise typer.Exit(1)
 
-    console.print(f"[bold]Pulling {len(images)} images from {compose_path.name}[/bold]\n")
+    if not json_output:
+        console.print(f"[bold]Pulling {len(images)} images from {compose_path.name}[/bold]\n")
 
     try:
         client = get_docker_client()
+
+        # JSON output mode - stream progress as JSON lines
+        if json_output:
+            last_progress = None
+            for pull_progress in pull_images_with_progress(client, images):
+                last_progress = pull_progress
+                output = {
+                    "percent": round(pull_progress.percent, 1),
+                    "downloaded_bytes": pull_progress.downloaded_bytes,
+                    "total_bytes": pull_progress.total_bytes,
+                    "images_complete": pull_progress.images_complete,
+                    "images_total": pull_progress.images_total,
+                    "completed_layers": pull_progress.completed_layers,
+                    "total_layers": pull_progress.total_layers,
+                    "images": {
+                        name: {
+                            "status": img.status,
+                            "error": img.error,
+                        }
+                        for name, img in pull_progress.images.items()
+                    }
+                }
+                print(json.dumps(output), flush=True)
+
+            # Final summary
+            if last_progress:
+                print(json.dumps({
+                    "complete": True,
+                    "images_complete": last_progress.images_complete,
+                    "images_total": last_progress.images_total,
+                }))
+            return
 
         with Progress(
             SpinnerColumn(),
@@ -174,7 +223,11 @@ def pull(
             console.print(f"\n[green]Successfully pulled {last_progress.images_complete}/{last_progress.images_total} images[/green]")
 
     except Exception as e:
-        console.print(f"\n[red]Pull failed: {e}[/red]")
+        if json_output:
+            import json
+            print(json.dumps({"error": str(e)}))
+        else:
+            console.print(f"\n[red]Pull failed: {e}[/red]")
         raise typer.Exit(1)
 
 
