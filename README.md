@@ -121,6 +121,44 @@ Pulling 3 images from docker-compose.yml
 
 You can also press `p` in the TUI to pull images.
 
+#### JSON Output
+
+For scripting and CI/CD pipelines, use `--json` to get machine-readable output:
+
+```bash
+composure pull --json
+```
+
+Outputs one JSON object per line with progress updates:
+
+```json
+{"percent": 36.5, "downloaded_bytes": 847000, "total_bytes": 2300000, "images_complete": 1, "images_total": 3, ...}
+```
+
+### Python API
+
+Use composure programmatically in your Python scripts:
+
+```python
+from composure import pull
+
+# With progress updates
+for progress in pull("/path/to/project"):
+    print(f"{progress.percent:.0f}% complete")
+    print(f"Images: {progress.images_complete}/{progress.images_total}")
+
+# Or just get final result
+result = pull("/path/to/project", progress=False)
+print(f"Pulled {result.images_complete} images")
+```
+
+The `PullProgress` object contains:
+- `percent` - Overall percentage (0-100)
+- `downloaded_bytes` / `total_bytes` - Byte counts
+- `images_complete` / `images_total` - Image counts
+- `completed_layers` / `total_layers` - Layer counts
+- `images` - Dict with per-image details
+
 ### Keyboard Shortcuts
 
 | Key | Action |
