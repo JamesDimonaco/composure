@@ -110,7 +110,7 @@ composure pull
 
 This shows real-time progress across all images downloading in parallel:
 
-```
+```text
 Pulling 3 images from docker-compose.yml
 
 ⠙ Overall              ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  36%  847MB / 2.3GB

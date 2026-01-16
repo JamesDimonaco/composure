@@ -87,13 +87,13 @@ class PullProgress:
 
 def parse_compose_images(compose_path: Path) -> list[str]:
     """
-    Parse a docker-compose file and extract all image names.
+    Parse a docker-compose file and extract all unique image names.
 
     Args:
         compose_path: Path to docker-compose.yml
 
     Returns:
-        List of image names (e.g., ['nginx:latest', 'postgres:15'])
+        List of unique image names in order (e.g., ['nginx:latest', 'postgres:15'])
     """
     yaml = YAML()
     yaml.preserve_quotes = True
@@ -102,16 +102,17 @@ def parse_compose_images(compose_path: Path) -> list[str]:
         data = yaml.load(f)
 
     images = []
+    seen = set()
     services = data.get('services', {})
 
-    for service_name, service_config in services.items():
+    for _service_name, service_config in services.items():
         if isinstance(service_config, dict):
             # Direct image reference
             if 'image' in service_config:
-                images.append(service_config['image'])
-            # Build context - skip these (need to build, not pull)
-            # elif 'build' in service_config:
-            #     pass
+                image = service_config['image']
+                if image not in seen:
+                    seen.add(image)
+                    images.append(image)
 
     return images
 
@@ -226,14 +227,19 @@ def pull_images_with_progress(
             break
 
     # Now yield progress updates while threads are running
-    completed = sum(1 for img in progress.images.values() if img.status in ("complete", "error"))
+    # Use a set to track completed images to avoid double-counting
+    completed_names = {
+        name for name, img in progress.images.items()
+        if img.status in ("complete", "error")
+    }
 
-    while completed < len(images):
+    while len(completed_names) < len(images):
         try:
             event_type, image = update_queue.get(timeout=0.1)
 
             if event_type in ("complete", "error"):
-                completed += 1
+                if image not in completed_names:
+                    completed_names.add(image)
 
             if progress_callback:
                 progress_callback(progress)
