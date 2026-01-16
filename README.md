@@ -23,6 +23,7 @@ Composure is a TUI (Terminal User Interface) dashboard that helps you:
 - **Detect waste** by comparing actual resource usage vs allocated limits
 - **Visualize networks** to see how containers connect to each other
 - **Control containers** directly from the terminal (start, stop, restart, view logs)
+- **Pull images** with a single overall progress bar across all images
 
 ## Features
 
@@ -32,6 +33,7 @@ Composure is a TUI (Terminal User Interface) dashboard that helps you:
 - **Network Visualization**: Tree view showing container network topology
 - **Container Controls**: Start, stop, restart containers with keyboard shortcuts
 - **Live Logs**: View recent logs for any container
+- **Image Pull Progress**: Pull all images from docker-compose.yml with a single overall progress percentage
 - **Parallel Loading**: Fast startup even with many containers
 
 ## Installation
@@ -98,17 +100,39 @@ pip install -e .
 composure
 ```
 
+### Pull Images
+
+Pull all images from your docker-compose.yml with a single overall progress percentage:
+
+```bash
+composure pull
+```
+
+This shows real-time progress across all images downloading in parallel:
+
+```text
+Pulling 3 images from docker-compose.yml
+
+⠙ Overall              ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  36%  847MB / 2.3GB
+    nginx:alpine       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100%  done
+    redis:alpine       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  45%  pulling
+    postgres:15-alpine ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  20%  pulling
+```
+
+You can also press `p` in the TUI to pull images.
+
 ### Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
 | `q` | Quit |
-| `r` | Refresh |
+| `r` | Refresh / Return from logs |
 | `n` | Toggle network view |
 | `s` | Stop selected container |
 | `a` | Start selected container |
 | `x` | Restart selected container |
 | `l` | Show logs for selected container |
+| `p` | Pull all images from docker-compose.yml |
 | `?` | Show help |
 | `↑/↓` | Navigate containers |
 

@@ -19,6 +19,12 @@ from composure.analyzer import (
     restart_container,
     get_container_logs,
 )
+from composure.puller import (
+    find_compose_and_images,
+    pull_images_with_progress,
+    format_bytes,
+    PullProgress,
+)
 
 # Regex to strip ANSI escape codes from log output
 ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*m')
@@ -78,6 +84,7 @@ class ComposureApp(App):
         Binding("a", "start_selected", "Start"),
         Binding("x", "restart_selected", "Restart"),
         Binding("l", "show_logs", "Logs"),
+        Binding("p", "pull_images", "Pull"),
         Binding("?", "help_screen", "Help"),
     ]
 
@@ -200,9 +207,11 @@ class ComposureApp(App):
             self.show_container_details(self.container_data[0])
 
     def action_refresh(self) -> None:
-        """Handle 'r' keypress - refresh current view or return from logs."""
+        """Handle 'r' keypress - refresh current view or return from logs/pull."""
         if self.current_view == "logs":
             self.restore_from_logs()
+        elif self.current_view == "pull":
+            self.restore_from_pull()
         elif self.current_view == "networks":
             self.refresh_networks()
         else:
@@ -216,7 +225,7 @@ class ComposureApp(App):
     def action_help_screen(self) -> None:
         """Handle '?' keypress."""
         status = self.query_one("#status-bar", Static)
-        status.update("s=Stop | a=Start | x=Restart | l=Logs | n=Networks | r=Refresh | q=Quit")
+        status.update("s=Stop | a=Start | x=Restart | l=Logs | p=Pull | n=Networks | r=Refresh | q=Quit")
 
     def get_selected_container(self):
         """Get the currently selected container, if any."""
@@ -375,6 +384,149 @@ class ComposureApp(App):
             self.show_container_details(self._logs_container)
 
         # Force full screen refresh
+        self.refresh()
+
+    def action_pull_images(self) -> None:
+        """Pull all images from docker-compose.yml with progress tracking."""
+        # Find compose file and images
+        compose_path, images = find_compose_and_images()
+
+        if not compose_path:
+            self.show_message("[red]No docker-compose.yml found in current directory[/red]")
+            return
+
+        if not images:
+            self.show_message("[yellow]No images found in compose file (all services use build?)[/yellow]")
+            return
+
+        # Hide the table and status bar
+        table = self.query_one(DataTable)
+        table.display = False
+        status = self.query_one("#status-bar", Static)
+        status.display = False
+
+        # Expand the panel to full size
+        panel = self.query_one("#detail-panel", Static)
+        panel.styles.max_height = "100%"
+        panel.styles.height = "1fr"
+        panel.styles.width = "100%"
+        panel.styles.margin = (0, 1, 1, 1)
+
+        self.current_view = "pull"
+        self._pull_images = images
+        self._pull_compose_path = compose_path
+
+        # Show initial state
+        panel.update(
+            f"[bold]Pulling {len(images)} images from {compose_path.name}[/bold]\n\n"
+            f"[dim]Starting...[/dim]\n\n"
+            f"[yellow]Press 'r' to cancel and return[/yellow]"
+        )
+
+        self.refresh()
+
+        # Start pull in background thread
+        self.run_worker(self._do_pull_images, name="pull_worker", thread=True)
+
+    def _do_pull_images(self) -> None:
+        """Background worker to pull images (runs in thread)."""
+        try:
+            client = get_docker_client()
+            images = self._pull_images
+
+            for progress in pull_images_with_progress(client, images):
+                if self.current_view != "pull":
+                    # User cancelled
+                    return
+
+                # Update UI from thread safely
+                self.call_from_thread(self._update_pull_display, progress)
+
+            # Final update
+            self.call_from_thread(self._update_pull_display, progress, True)
+
+        except Exception as e:
+            self.call_from_thread(self._show_pull_error, str(e))
+
+    def _show_pull_error(self, error: str) -> None:
+        """Show pull error (called from main thread)."""
+        panel = self.query_one("#detail-panel", Static)
+        # Escape brackets in error message to avoid Rich markup conflicts
+        safe_error = error.replace("[", "\\[").replace("]", "\\]")
+        panel.update(f"[red]Pull failed: {safe_error}[/red]\n\n[yellow]Press 'r' to return[/yellow]")
+
+    def _update_pull_display(self, progress: PullProgress, complete: bool = False) -> None:
+        """Update the pull progress display."""
+        if self.current_view != "pull":
+            return
+
+        panel = self.query_one("#detail-panel", Static)
+
+        # Build progress bar
+        percent = progress.percent
+        bar_width = 40
+        filled = int(bar_width * percent / 100)
+        bar = "[green]" + "#" * filled + "[/green]" + "[dim]" + "-" * (bar_width - filled) + "[/dim]"
+
+        # Build image status lines
+        image_lines = []
+        for img_name, img_prog in progress.images.items():
+            if img_prog.status == "complete":
+                status_icon = "[green]OK[/green]"
+            elif img_prog.status == "pulling":
+                status_icon = "[yellow]...[/yellow]"
+            elif img_prog.status == "error":
+                status_icon = "[red]ERR[/red]"
+            else:
+                status_icon = "[dim]---[/dim]"
+
+            image_lines.append(f"  {status_icon} {img_name}")
+
+        images_text = "\n".join(image_lines)
+
+        # Format bytes
+        downloaded = format_bytes(progress.downloaded_bytes)
+        total = format_bytes(progress.total_bytes)
+
+        if complete:
+            header = f"[bold green]Pull Complete![/bold green]"
+            footer = f"\n[green]Successfully pulled {progress.images_complete}/{progress.images_total} images[/green]\n\n[yellow]Press 'r' to return[/yellow]"
+        else:
+            header = f"[bold]Pulling {progress.images_total} images...[/bold]"
+            footer = f"\n[yellow]Press 'r' to cancel and return[/yellow]"
+
+        panel.update(
+            f"{header}\n\n"
+            f"  \\[{bar}\\]  {percent:.0f}%\n"
+            f"  {downloaded} / {total}  |  "
+            f"Layers: {progress.completed_layers}/{progress.total_layers}  |  "
+            f"Images: {progress.images_complete}/{progress.images_total}\n\n"
+            f"{images_text}"
+            f"{footer}"
+        )
+
+    def restore_from_pull(self) -> None:
+        """Restore the normal view after pull."""
+        if self.current_view != "pull":
+            return
+
+        # Show the table and status bar again
+        table = self.query_one(DataTable)
+        table.display = True
+        status = self.query_one("#status-bar", Static)
+        status.display = True
+
+        # Restore panel size
+        panel = self.query_one("#detail-panel", Static)
+        panel.styles.max_height = "15"
+        panel.styles.height = "auto"
+        panel.styles.width = "auto"
+        panel.styles.margin = (0, 1, 1, 1)
+
+        self.current_view = "stats"
+
+        # Refresh stats to show any new containers
+        self.refresh_stats()
         self.refresh()
 
     def show_message(self, message: str) -> None:
