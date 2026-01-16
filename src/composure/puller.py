@@ -257,10 +257,20 @@ def pull_images_with_progress(
 
 
 def _parse_image_name(image: str) -> tuple[str, str]:
-    """Parse image name into repo and tag."""
-    if ':' in image:
-        parts = image.rsplit(':', 1)
-        return parts[0], parts[1]
+    """Parse image name into repo and tag.
+
+    Handles registry ports correctly:
+    - nginx:alpine -> ('nginx', 'alpine')
+    - myregistry.com:5000/myimage -> ('myregistry.com:5000/myimage', 'latest')
+    - myregistry.com:5000/myimage:v1 -> ('myregistry.com:5000/myimage', 'v1')
+    """
+    last_slash = image.rfind('/')
+    last_colon = image.rfind(':')
+
+    # Only treat as tag if colon comes after the last slash
+    # (i.e., it's not part of a registry port like :5000)
+    if last_colon > last_slash:
+        return image[:last_colon], image[last_colon + 1:]
     return image, 'latest'
 
 
