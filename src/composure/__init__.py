@@ -19,7 +19,7 @@ Python API Usage:
 import warnings
 warnings.filterwarnings("ignore", message=".*LibreSSL.*")
 
-__version__ = "0.1.8"
+__version__ = "0.1.9"
 
 from typing import Generator, Optional, Union
 from pathlib import Path

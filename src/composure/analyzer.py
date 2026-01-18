@@ -25,6 +25,19 @@ class ContainerStats:
     waste_score: int  # 0-100, higher = more wasteful
     networks: List[str]  # List of network names this container is connected to
     status: str  # running, paused, etc.
+    # Extended info
+    image: str = ""  # Image name
+    ports: List[str] = None  # Port mappings like "8080:80/tcp"
+    mounts: List[str] = None  # Mount points like "/host/path:/container/path"
+    command: str = ""  # Command being run
+    created: str = ""  # When container was created
+    restart_policy: str = ""  # Restart policy (always, unless-stopped, etc.)
+
+    def __post_init__(self):
+        if self.ports is None:
+            self.ports = []
+        if self.mounts is None:
+            self.mounts = []
 
 
 def get_docker_client():
@@ -96,6 +109,66 @@ def get_container_logs(client, container_name: str, tail: int = 50) -> tuple[boo
         return True, logs
     except Exception as e:
         return False, f"Failed to get logs: {e}"
+
+
+@dataclass
+class LogEntry:
+    """A single log line with metadata."""
+    container_name: str
+    timestamp: str
+    message: str
+
+
+def get_multi_container_logs(client, container_names: List[str], tail: int = 50) -> List[LogEntry]:
+    """
+    Fetch logs from multiple containers and merge them chronologically.
+
+    Returns a list of LogEntry objects sorted by timestamp.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    def fetch_logs(name: str) -> List[LogEntry]:
+        """Fetch and parse logs for one container."""
+        entries = []
+        try:
+            container = client.containers.get(name)
+            if container.status != "running":
+                return entries
+            logs = container.logs(tail=tail, timestamps=True).decode('utf-8')
+            for line in logs.strip().split('\n'):
+                if not line.strip():
+                    continue
+                # Docker timestamp format: 2024-01-15T10:30:45.123456789Z
+                # Split on first space to separate timestamp from message
+                parts = line.split(' ', 1)
+                if len(parts) == 2:
+                    timestamp, message = parts
+                    entries.append(LogEntry(
+                        container_name=name,
+                        timestamp=timestamp,
+                        message=message
+                    ))
+                else:
+                    entries.append(LogEntry(
+                        container_name=name,
+                        timestamp="",
+                        message=line
+                    ))
+        except Exception:
+            pass
+        return entries
+
+    # Fetch logs from all containers in parallel
+    all_entries = []
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        results = executor.map(fetch_logs, container_names)
+        for entries in results:
+            all_entries.extend(entries)
+
+    # Sort by timestamp (ISO format sorts correctly as strings)
+    all_entries.sort(key=lambda e: e.timestamp)
+
+    return all_entries
 
 
 def get_container_stats(client) -> list[ContainerStats]:
@@ -171,6 +244,54 @@ def get_single_container_stats(container) -> Optional[ContainerStats]:
         network_settings = container.attrs.get('NetworkSettings', {})
         networks = list(network_settings.get('Networks', {}).keys())
 
+        # Get port mappings
+        ports = []
+        port_bindings = network_settings.get('Ports', {})
+        for container_port, host_bindings in (port_bindings or {}).items():
+            if host_bindings:
+                for binding in host_bindings:
+                    host_port = binding.get('HostPort', '')
+                    host_ip = binding.get('HostIp', '0.0.0.0')
+                    if host_ip == '0.0.0.0':
+                        ports.append(f"{host_port}:{container_port}")
+                    else:
+                        ports.append(f"{host_ip}:{host_port}:{container_port}")
+            else:
+                # Port exposed but not published
+                ports.append(f"({container_port})")
+
+        # Get mount points
+        mounts = []
+        for mount in container.attrs.get('Mounts', []):
+            mount_type = mount.get('Type', 'bind')
+            source = mount.get('Source', mount.get('Name', ''))
+            destination = mount.get('Destination', '')
+            mode = mount.get('Mode', 'rw')
+            if mount_type == 'volume':
+                mounts.append(f"[vol] {source[:20]}:{destination}")
+            else:
+                # Shorten long paths
+                if len(source) > 25:
+                    source = "..." + source[-22:]
+                mounts.append(f"{source}:{destination}")
+            if mode == 'ro':
+                mounts[-1] += " (ro)"
+
+        # Get image name
+        image = container.attrs.get('Config', {}).get('Image', '')
+
+        # Get command
+        cmd = container.attrs.get('Config', {}).get('Cmd', [])
+        command = ' '.join(cmd) if cmd else ''
+        if len(command) > 50:
+            command = command[:47] + "..."
+
+        # Get created timestamp (just the date part)
+        created = container.attrs.get('Created', '')[:10]
+
+        # Get restart policy
+        restart_policy = config.get('RestartPolicy', {}).get('Name', 'no')
+
         return ContainerStats(
             name=container.name,
             container_id=container.short_id,  # e.g., "a1b2c3d4"
@@ -185,6 +306,12 @@ def get_single_container_stats(container) -> Optional[ContainerStats]:
             waste_score=waste_score,
             networks=networks,
             status=container.status,  # 'running', 'paused', 'exited', etc.
+            image=image,
+            ports=ports,
+            mounts=mounts,
+            command=command,
+            created=created,
+            restart_policy=restart_policy,
         )
     except Exception:
         # Container might have stopped while we were fetching

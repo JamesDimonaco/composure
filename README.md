@@ -33,6 +33,7 @@ Composure is a TUI (Terminal User Interface) dashboard that helps you:
 - **Network Visualization**: Tree view showing container network topology
 - **Container Controls**: Start, stop, restart containers with keyboard shortcuts
 - **Live Logs**: View recent logs for any container
+- **Multi-Container Logs**: View merged logs from ALL containers with color-coded prefixes (press `L`)
 - **Image Pull Progress**: Pull all images from docker-compose.yml with a single overall progress percentage
 - **Parallel Loading**: Fast startup even with many containers
 
@@ -170,6 +171,7 @@ The `PullProgress` object contains:
 | `a` | Start selected container |
 | `x` | Restart selected container |
 | `l` | Show logs for selected container |
+| `L` | Show merged logs from ALL containers (color-coded) |
 | `p` | Pull all images from docker-compose.yml |
 | `?` | Show help |
 | `↑/↓` | Navigate containers |
@@ -184,6 +186,27 @@ nginx         running  0.5%   2 cores    45 MB     512 MB     LOW         90
 api           running  2.1%   No limit   128 MB    256 MB     MEDIUM      40
 postgres      running  1.2%   1 core     256 MB    512 MB     GOOD        20
 ```
+
+### Detail Panel
+
+Select a container to see detailed info at the bottom:
+
+```
+nginx  running  Image: nginx:alpine
+ID: a1b2c3d4  Ports: 8080:80/tcp, 443:443/tcp  Restart: always
+Mounts: ./html:/usr/share/nginx/html
+Networks: frontend, backend
+Logs: (press 'l' for full, 'L' for all)
+  2024-01-15T10:30:45 GET /api/health 200
+```
+
+| Field | Description |
+|-------|-------------|
+| **Image** | Docker image being used |
+| **Ports** | Port mappings (host:container) |
+| **Restart** | Restart policy (always, unless-stopped, on-failure, no) |
+| **Mounts** | Volume and bind mounts |
+| **Networks** | Connected networks |
 
 ### Columns Explained
 

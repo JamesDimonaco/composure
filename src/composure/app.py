@@ -18,6 +18,7 @@ from composure.analyzer import (
     start_container,
     restart_container,
     get_container_logs,
+    get_multi_container_logs,
 )
 from composure.puller import (
     find_compose_and_images,
@@ -28,6 +29,20 @@ from composure.puller import (
 
 # Regex to strip ANSI escape codes from log output
 ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*m')
+
+# Color palette for multi-container logs (easily distinguishable)
+CONTAINER_COLORS = [
+    "cyan",
+    "green",
+    "yellow",
+    "magenta",
+    "blue",
+    "red",
+    "bright_cyan",
+    "bright_green",
+    "bright_yellow",
+    "bright_magenta",
+]
 
 
 class DetailPanel(Static):
@@ -54,7 +69,7 @@ class ComposureApp(App):
     /* Detail panel at the bottom */
     #detail-panel {
         height: auto;
-        max-height: 15;
+        max-height: 18;
         margin: 0 1 1 1;
         padding: 1;
         border: round $secondary;
@@ -84,6 +99,7 @@ class ComposureApp(App):
         Binding("a", "start_selected", "Start"),
         Binding("x", "restart_selected", "Restart"),
         Binding("l", "show_logs", "Logs"),
+        Binding("L", "show_multi_logs", "All Logs"),
         Binding("p", "pull_images", "Pull"),
         Binding("?", "help_screen", "Help"),
     ]
@@ -145,7 +161,7 @@ class ComposureApp(App):
             client = get_docker_client()
             success, logs = get_container_logs(client, container.name, tail=10)
             if success and logs.strip():
-                log_lines = logs.strip().split('\n')[-8:]  # Last 8 lines
+                log_lines = logs.strip().split('\n')[-5:]  # Last 5 lines (reduced for more info)
                 # Strip ANSI escape codes from logs to avoid markup conflicts
                 clean_lines = [ANSI_ESCAPE.sub('', line) for line in log_lines]
                 formatted_logs = '\n'.join(f"  [dim]{line}[/dim]" for line in clean_lines)
@@ -154,14 +170,44 @@ class ComposureApp(App):
         except Exception:
             formatted_logs = "  [dim](unable to fetch logs)[/dim]"
 
-        # Format the detail view with easy-to-copy IDs
+        # Format ports
+        if container.ports:
+            ports_str = ", ".join(container.ports[:3])  # Show first 3
+            if len(container.ports) > 3:
+                ports_str += f" (+{len(container.ports) - 3} more)"
+            ports_display = f"[green]{ports_str}[/green]"
+        else:
+            ports_display = "[dim]none[/dim]"
+
+        # Format mounts
+        if container.mounts:
+            mounts_str = ", ".join(container.mounts[:2])  # Show first 2
+            if len(container.mounts) > 2:
+                mounts_str += f" (+{len(container.mounts) - 2} more)"
+            mounts_display = f"[yellow]{mounts_str}[/yellow]"
+        else:
+            mounts_display = "[dim]none[/dim]"
+
+        # Format restart policy with color
+        restart_colors = {
+            "always": "[green]always[/green]",
+            "unless-stopped": "[green]unless-stopped[/green]",
+            "on-failure": "[yellow]on-failure[/yellow]",
+            "no": "[dim]no[/dim]",
+        }
+        restart_display = restart_colors.get(container.restart_policy, f"[dim]{container.restart_policy}[/dim]")
+
+        # Format the detail view with all info
         detail_text = (
             f"[bold]{container.name}[/bold]  "
             f"{self.format_status(container.status)}  "
-            f"[dim]Networks: {', '.join(container.networks) if container.networks else 'none'}[/dim]\n"
+            f"[dim]Image:[/dim] [cyan]{container.image}[/cyan]\n"
             f"[bold]ID:[/bold] [cyan]{container.container_id}[/cyan]  "
-            f"[dim]Full:[/dim] [cyan]{container.full_id[:20]}...[/cyan]\n"
-            f"[bold]Logs:[/bold]\n{formatted_logs}"
+            f"[bold]Ports:[/bold] {ports_display}  "
+            f"[bold]Restart:[/bold] {restart_display}\n"
+            f"[bold]Mounts:[/bold] {mounts_display}\n"
+            f"[bold]Networks:[/bold] [dim]{', '.join(container.networks) if container.networks else 'none'}[/dim]\n"
+            f"[bold]Logs:[/bold] [dim](press 'l' for full, 'L' for all)[/dim]\n{formatted_logs}"
         )
 
         panel.update(detail_text)
@@ -210,6 +256,8 @@ class ComposureApp(App):
         """Handle 'r' keypress - refresh current view or return from logs/pull."""
         if self.current_view == "logs":
             self.restore_from_logs()
+        elif self.current_view == "multi_logs":
+            self.restore_from_logs()
         elif self.current_view == "pull":
             self.restore_from_pull()
         elif self.current_view == "networks":
@@ -225,7 +273,7 @@ class ComposureApp(App):
     def action_help_screen(self) -> None:
         """Handle '?' keypress."""
         status = self.query_one("#status-bar", Static)
-        status.update("s=Stop | a=Start | x=Restart | l=Logs | p=Pull | n=Networks | r=Refresh | q=Quit")
+        status.update("s=Stop | a=Start | x=Restart | l=Logs | L=All Logs | p=Pull | n=Networks | r=Refresh | q=Quit")
 
     def get_selected_container(self):
         """Get the currently selected container, if any."""
@@ -357,7 +405,7 @@ class ComposureApp(App):
 
     def restore_from_logs(self) -> None:
         """Restore the normal view after viewing logs."""
-        if self.current_view != "logs":
+        if self.current_view not in ("logs", "multi_logs"):
             return
 
         # Stop the live refresh timer
@@ -372,7 +420,7 @@ class ComposureApp(App):
 
         # Restore panel size
         panel = self.query_one("#detail-panel", Static)
-        panel.styles.max_height = "15"
+        panel.styles.max_height = "18"
         panel.styles.height = "auto"
         panel.styles.width = "auto"
         panel.styles.margin = (0, 1, 1, 1)
@@ -385,6 +433,104 @@ class ComposureApp(App):
 
         # Force full screen refresh
         self.refresh()
+
+    def action_show_multi_logs(self) -> None:
+        """Show logs from ALL running containers merged together (fullscreen, live)."""
+        if not self.container_data:
+            self.show_message("[yellow]No containers available[/yellow]")
+            return
+
+        # Get running containers only
+        running = [c for c in self.container_data if c.status == "running"]
+        if not running:
+            self.show_message("[yellow]No running containers[/yellow]")
+            return
+
+        # Hide the table and status bar completely
+        table = self.query_one(DataTable)
+        table.display = False
+        status = self.query_one("#status-bar", Static)
+        status.display = False
+
+        # Expand the panel to full size
+        panel = self.query_one("#detail-panel", Static)
+        panel.styles.max_height = "100%"
+        panel.styles.height = "1fr"
+        panel.styles.width = "100%"
+        panel.styles.margin = (0, 1, 1, 1)
+
+        self.current_view = "multi_logs"
+        self._multi_logs_containers = running
+
+        # Assign colors to containers
+        self._container_colors = {}
+        for i, container in enumerate(running):
+            self._container_colors[container.name] = CONTAINER_COLORS[i % len(CONTAINER_COLORS)]
+
+        # Show initial logs
+        self._refresh_multi_logs()
+
+        # Start live log refresh (every 2 seconds)
+        self._log_timer = self.set_interval(2, self._refresh_multi_logs)
+
+        # Force full screen refresh
+        self.refresh()
+
+    def _refresh_multi_logs(self) -> None:
+        """Refresh the multi-container logs display."""
+        if self.current_view != "multi_logs" or not hasattr(self, '_multi_logs_containers'):
+            return
+
+        panel = self.query_one("#detail-panel", Static)
+
+        try:
+            client = get_docker_client()
+            container_names = [c.name for c in self._multi_logs_containers]
+            entries = get_multi_container_logs(client, container_names, tail=100)
+
+            # Take last 40 entries for display
+            entries = entries[-40:]
+
+            if not entries:
+                panel.update(
+                    f"[bold]All Logs[/bold] ({len(container_names)} containers)  "
+                    f"[green]LIVE[/green]  [yellow]Press 'r' to return[/yellow]\n\n"
+                    f"[dim](no logs from running containers)[/dim]"
+                )
+                return
+
+            # Build legend
+            legend_parts = []
+            for name, color in self._container_colors.items():
+                short_name = name[:12]
+                legend_parts.append(f"[{color}]{short_name}[/{color}]")
+            legend = "  ".join(legend_parts)
+
+            # Format log lines with colored prefixes
+            log_lines = []
+            for entry in entries:
+                color = self._container_colors.get(entry.container_name, "white")
+                # Short container name as prefix
+                prefix = entry.container_name[:12].ljust(12)
+                # Clean the message of any ANSI codes
+                message = ANSI_ESCAPE.sub('', entry.message)
+                # Format timestamp (just time portion)
+                time_str = ""
+                if entry.timestamp and 'T' in entry.timestamp:
+                    time_part = entry.timestamp.split('T')[1][:8]  # HH:MM:SS
+                    time_str = f"[dim]{time_part}[/dim] "
+                log_lines.append(f"[{color}]{prefix}[/{color}] {time_str}{message}")
+
+            formatted_logs = '\n'.join(log_lines)
+
+            panel.update(
+                f"[bold]All Logs[/bold] ({len(container_names)} containers)  "
+                f"[green]LIVE[/green]  [yellow]Press 'r' to return[/yellow]\n"
+                f"[dim]{legend}[/dim]\n\n"
+                f"{formatted_logs}"
+            )
+        except Exception as e:
+            panel.update(f"[red]Error fetching logs: {e}[/red]")
 
     def action_pull_images(self) -> None:
         """Pull all images from docker-compose.yml with progress tracking."""
@@ -518,7 +664,7 @@ class ComposureApp(App):
 
         # Restore panel size
         panel = self.query_one("#detail-panel", Static)
-        panel.styles.max_height = "15"
+        panel.styles.max_height = "18"
         panel.styles.height = "auto"
         panel.styles.width = "auto"
         panel.styles.margin = (0, 1, 1, 1)
